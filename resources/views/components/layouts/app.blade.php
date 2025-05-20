@@ -40,12 +40,12 @@
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-layer-group me-1"></i>Catégories
                         </a>
+                        {{--d--}}
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Catégorie 1</a></li>
-                            <li><a class="dropdown-item" href="#">Catégorie 2</a></li>
-                            <li><a class="dropdown-item" href="#">Catégorie 3</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">Toutes les catégories</a></li>
+                            @foreach ($categories as $categorie)
+                                <li><a class="dropdown-item" href="#">{{ $categorie->nom_categorie }}</a></li>
+                            @endforeach
+
                         </ul>
                     </li>
                 </ul>
