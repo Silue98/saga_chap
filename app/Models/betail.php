@@ -28,7 +28,7 @@ class Betail extends Model
 ];
 
 
-    public function Categorie()
+    public function categorie()
     {
         return $this->belongsTo(Categorie::class, 'id_categorie_betail');
     }
