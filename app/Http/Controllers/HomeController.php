@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\categorie_betail;
-use App\Models\betail;
+use App\Models\Categorie;
+use App\Models\Betail;
 class HomeController extends Controller
 {
     /**
@@ -12,8 +12,8 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $categories = categorie_betail::all();
-        $betails = betail::all();
+        $categories = Categorie::all();
+        $betails = Betail::all();
         return view('welcome', compact('categories', 'betails'));
     }
 
