@@ -63,7 +63,7 @@ class BetailResource extends Resource
                     ->required()
                     ->disk('public')
                     ->directory('betails/photos')
-                    ->maxSize(1024) // 1MB
+                    ->maxSize(2024) // 1MB
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif']),
                 TextInput::make('quantite')
                     ->label('Quantité')
@@ -85,8 +85,8 @@ class BetailResource extends Resource
                 Forms\Components\Select::make('disponibilite')
                     ->label('Disponibilité')
                     ->options([
-                        'Disponible' => 'Disponible',
-                        'Indisponible' => 'Indisponible',
+                        '1' => 'Disponible',
+                        '0' => 'Indisponible',
                     ])
                     ->default('Disponible')
                     ->required(),

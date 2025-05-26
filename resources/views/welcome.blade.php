@@ -11,7 +11,7 @@
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
                 <div class="card h-100 shadow-sm">
                     {{-- Image du bétail --}}
-                    <img src="{{ asset('storage/images/' . $betail->photo) }}" class="card-img-top img-fluid" alt="Photo de {{ $betail->race }}" style="height: 180px; object-fit: cover;">
+                    <img src="{{ asset('storage/' . $betail->photo) }}" class="card-img-top img-fluid" alt="Photo de {{ $betail->race }}" style="height: 180px; object-fit: cover;">
 
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">{{ $betail->race }}</h5>

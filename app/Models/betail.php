@@ -15,9 +15,18 @@ class Betail extends Model
 
     // 👇 Ajout de la propriété fillable
     protected $fillable = [
-        'id_categorie_betail',
-        // Ajoute ici d'autres champs si tu veux les rendre assignables
-    ];
+    'id_categorie_betail',
+    'race',
+    'age',
+    'poids',
+    'prix',
+    'origine',
+    'photo',
+    'video',
+    'quantite',
+    'disponibilite',
+];
+
 
     public function Categorie()
     {
