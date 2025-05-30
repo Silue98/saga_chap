@@ -5,6 +5,7 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\HomeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+route::get('/betails/{id}', [HomeController::class, 'show'])->name('betails.show');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

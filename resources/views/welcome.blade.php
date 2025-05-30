@@ -22,7 +22,7 @@
                             <strong>Origine :</strong> {{ $betail->origine }}
                         </p>
                         <div class="mt-auto d-flex flex-wrap gap-2">
-                            <a href="#" class="btn btn-primary btn-sm">Voir</a>
+                            <a href="{{ route('betails.show', $betail->id_betail) }}" class="btn btn-primary btn-sm">Voir</a>
                             <a href="#" class="btn btn-success btn-sm">Ajouter au panier</a>
                         </div>
                     </div>

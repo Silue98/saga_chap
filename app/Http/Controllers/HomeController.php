@@ -38,7 +38,9 @@ class HomeController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $betail = Betail::findOrFail($id);
+        $categorie = Categorie::findOrFail($betail->id_categorie_betail);
+        return view('client.betail.show', compact('betail', 'categorie'));
     }
 
     /**
