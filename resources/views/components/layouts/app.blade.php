@@ -119,4 +119,5 @@
     </main>
 
 </body>
+@livewireScripts
 </html>

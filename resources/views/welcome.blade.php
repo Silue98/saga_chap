@@ -10,9 +10,7 @@
         @forelse($betails as $betail)
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
                 <div class="card h-100 shadow-sm">
-                    {{-- Image du bétail --}}
                     <img src="{{ asset('storage/' . $betail->photo) }}" class="card-img-top img-fluid" alt="Photo de {{ $betail->race }}" style="height: 180px; object-fit: cover;">
-
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">{{ $betail->race }}</h5>
                         <p class="card-text">
@@ -23,7 +21,7 @@
                         </p>
                         <div class="mt-auto d-flex flex-wrap gap-2">
                             <a href="{{ route('betails.show', $betail->id_betail) }}" class="btn btn-primary btn-sm">Voir</a>
-                            <a href="#" class="btn btn-success btn-sm">Ajouter au panier</a>
+                            <button wire:click="addToCart({{ $betail->id_betail }})" class="btn btn-success btn-sm">Ajouter au panier</button>
                         </div>
                     </div>
                 </div>
@@ -36,5 +34,7 @@
             </div>
         @endforelse
     </div>
+
+    <livewire:cart-counter />
 </div>
 @endsection

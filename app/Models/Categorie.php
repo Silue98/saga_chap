@@ -12,7 +12,8 @@ class Categorie extends Model
 
     function betail()
     {
-        return $this->hasMany(betail::class, 'id_categorie_betail');
+        return $this->hasMany(Betail::class, 'id_categorie_betail');
     }
+    
 
 }

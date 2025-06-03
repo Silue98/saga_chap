@@ -32,4 +32,7 @@ class Betail extends Model
     {
         return $this->belongsTo(Categorie::class, 'id_categorie_betail');
     }
+    public function cart()
+    {
+        return $this->hasMany(Cart::class, 'id_betail');}
 }
