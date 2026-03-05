@@ -7,10 +7,16 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
+use App\Filament\Pages\Dashboard as CustomDashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
+use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\CommandesChart;
+use App\Filament\Widgets\RevenusChart;
+use App\Filament\Widgets\StatutCommandesChart;
+use App\Filament\Widgets\DernieresCommandes;
+use App\Filament\Widgets\NouvellesCommandes;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -26,20 +32,24 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Saga Chap Admin')
+            ->brandName('SagaChap Admin')
+            ->brandLogo(null)
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                CustomDashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                NouvellesCommandes::class,
+                StatsOverview::class,
+                CommandesChart::class,
+                RevenusChart::class,
+                StatutCommandesChart::class,
+                DernieresCommandes::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -52,6 +62,8 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->authMiddleware([
                 Authenticate::class,
             ]);

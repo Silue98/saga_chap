@@ -14,14 +14,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public string $password = '';
     public string $password_confirmation = '';
 
-    /**
-     * Handle an incoming registration request.
-     */
     public function register(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -31,67 +28,69 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         Auth::login($user);
 
-        $this->redirectIntended(route('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(route('home'), navigate: true);
     }
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
 
-    <!-- Session Status -->
+    <div style="text-align:center;margin-bottom:8px;">
+        <h2 style="font-size:1.5rem;font-weight:700;color:#111827;margin:0 0 6px;">Créer un compte</h2>
+        <p style="font-size:0.9rem;color:#6b7280;margin:0;">Rejoignez SagaChap et achetez votre bétail en ligne</p>
+    </div>
+
     <x-auth-session-status class="text-center" :status="session('status')" />
 
-    <form wire:submit="register" class="flex flex-col gap-6">
-        <!-- Name -->
+    <form wire:submit="register" class="flex flex-col gap-5">
+
         <flux:input
             wire:model="name"
-            :label="__('Name')"
+            label="Nom complet"
             type="text"
             required
             autofocus
             autocomplete="name"
-            :placeholder="__('Full name')"
+            placeholder="Votre nom complet"
         />
 
-        <!-- Email Address -->
         <flux:input
             wire:model="email"
-            :label="__('Email address')"
+            label="Adresse email"
             type="email"
             required
             autocomplete="email"
-            placeholder="email@example.com"
+            placeholder="votre@email.com"
         />
 
-        <!-- Password -->
         <flux:input
             wire:model="password"
-            :label="__('Password')"
+            label="Mot de passe"
             type="password"
             required
             autocomplete="new-password"
-            :placeholder="__('Password')"
+            placeholder="Minimum 8 caractères"
         />
 
-        <!-- Confirm Password -->
         <flux:input
             wire:model="password_confirmation"
-            :label="__('Confirm password')"
+            label="Confirmer le mot de passe"
             type="password"
             required
             autocomplete="new-password"
-            :placeholder="__('Confirm password')"
+            placeholder="Répétez le mot de passe"
         />
 
-        <div class="flex items-center justify-end">
-            <flux:button type="submit" variant="primary" class="w-full">
-                {{ __('Create account') }}
-            </flux:button>
-        </div>
+        <flux:button type="submit" variant="primary" class="w-full" style="background:#16a34a;margin-top:4px;">
+            Créer mon compte
+        </flux:button>
+
     </form>
 
-    <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
-        {{ __('Already have an account?') }}
-        <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
+    <div style="text-align:center;font-size:0.875rem;color:#6b7280;">
+        Déjà inscrit ?
+        <flux:link :href="route('login')" wire:navigate style="color:#16a34a;font-weight:600;">
+            Se connecter
+        </flux:link>
     </div>
+
 </div>

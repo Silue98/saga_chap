@@ -20,107 +20,96 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     public bool $remember = false;
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function login(): void
     {
         $this->validate();
-
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
-
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'email' => 'Email ou mot de passe incorrect.',
             ]);
         }
 
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(default: route('home'), navigate: true);
     }
 
-    /**
-     * Ensure the authentication request is not rate limited.
-     */
     protected function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
-        }
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) return;
 
         event(new Lockout(request()));
-
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => 'Trop de tentatives. Réessayez dans ' . ceil($seconds / 60) . ' minute(s).',
         ]);
     }
 
-    /**
-     * Get the authentication rate limiting throttle key.
-     */
     protected function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+        return Str::transliterate(Str::lower($this->email) . '|' . request()->ip());
     }
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
 
-    <!-- Session Status -->
+    <div style="text-align:center;margin-bottom:8px;">
+        <h2 style="font-size:1.5rem;font-weight:700;color:#111827;margin:0 0 6px;">Bon retour ! 👋</h2>
+        <p style="font-size:0.9rem;color:#6b7280;margin:0;">Connectez-vous à votre compte SagaChap</p>
+    </div>
+
     <x-auth-session-status class="text-center" :status="session('status')" />
 
-    <form wire:submit="login" class="flex flex-col gap-6">
-        <!-- Email Address -->
+    <form wire:submit="login" class="flex flex-col gap-5">
+
         <flux:input
             wire:model="email"
-            :label="__('Email address')"
+            label="Adresse email"
             type="email"
             required
             autofocus
             autocomplete="email"
-            placeholder="email@example.com"
+            placeholder="votre@email.com"
         />
 
-        <!-- Password -->
-        <div class="relative">
+        <div style="position:relative;">
             <flux:input
                 wire:model="password"
-                :label="__('Password')"
+                label="Mot de passe"
                 type="password"
                 required
                 autocomplete="current-password"
-                :placeholder="__('Password')"
+                placeholder="Votre mot de passe"
             />
-
             @if (Route::has('password.request'))
-                <flux:link class="absolute end-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </flux:link>
+                <div style="position:absolute;top:0;right:0;">
+                    <flux:link :href="route('password.request')" wire:navigate style="font-size:0.8rem;color:#16a34a;">
+                        Mot de passe oublié ?
+                    </flux:link>
+                </div>
             @endif
         </div>
 
-        <!-- Remember Me -->
-        <flux:checkbox wire:model="remember" :label="__('Remember me')" />
+        <flux:checkbox wire:model="remember" label="Se souvenir de moi" />
 
-        <div class="flex items-center justify-end">
-            <flux:button variant="primary" type="submit" class="w-full">{{ __('Log in') }}</flux:button>
-        </div>
+        <flux:button variant="primary" type="submit" class="w-full" style="background:#16a34a;">
+            Se connecter
+        </flux:button>
+
     </form>
 
     @if (Route::has('register'))
-        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
-            {{ __('Don\'t have an account?') }}
-            <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+        <div style="text-align:center;font-size:0.875rem;color:#6b7280;">
+            Pas encore de compte ?
+            <flux:link :href="route('register')" wire:navigate style="color:#16a34a;font-weight:600;">
+                Créer un compte gratuit
+            </flux:link>
         </div>
     @endif
+
 </div>

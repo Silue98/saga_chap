@@ -3,68 +3,81 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-
-namespace App\Livewire;
-
-use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Cart;
+use App\Models\Betail;
 
 class CartCounter extends Component
 {
-    public $cartCount = 0;
+    public int $cartCount = 0;
+    public ?string $flashSuccess = null;
+    public ?string $flashError   = null;
 
-    public function mount()
+    protected $listeners = ['cartUpdated' => 'updateCartCount'];
+
+    public function mount(): void
     {
         $this->updateCartCount();
     }
 
-    public function addToCart($articleId, $quantity = 1)
+    public function addToCart(int $betailId, int $quantity = 1): void
     {
-        if (!is_numeric($articleId) || $quantity < 1) {
+        $betail = Betail::find($betailId);
+
+        if (!$betail || !$betail->disponibilite) {
+            $this->flashError = 'Ce bétail n\'est plus disponible.';
             return;
         }
 
         $sessionId = session()->getId();
-        $userId = Auth::check() ? Auth::id() : null;
+        $userId    = Auth::check() ? Auth::id() : null;
 
-        // Vérifier si l'article existe déjà dans le panier
-        $cartItem = Cart::where('article_id', $articleId)
-            ->where(function ($query) use ($userId, $sessionId) {
-                $query->where('session_id', $sessionId);
-                if ($userId) {
-                    $query->orWhere('user_id', $userId);
-                }
-            })
-            ->first();
+        $query = Cart::where('id_betail', $betailId);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        } else {
+            $query->where('session_id', $sessionId);
+        }
+        $cartItem = $query->first();
 
         if ($cartItem) {
-            // Incrémenter la quantité
             $cartItem->increment('quantite', $quantity);
         } else {
-            // Ajouter un nouvel article
             Cart::create([
-                'user_id' => $userId,
+                'user_id'    => $userId,
                 'session_id' => $sessionId,
-                'article_id' => $articleId,
-                'quantite' => $quantity,
+                'id_betail'  => $betailId,
+                'quantite'   => $quantity,
             ]);
         }
 
-        // Mettre à jour le compteur
+        $this->flashSuccess = $betail->race . ' ajouté au panier !';
         $this->updateCartCount();
-
-        // Émettre une notification
-        session()->flash('cart_updated', 'Article ajouté au panier !');
     }
 
-    public function updateCartCount()
+    public function updateCartCount(): void
     {
-        $this->cartCount = Cart::where('session_id', session()->getId())
-            ->when(Auth::check(), function ($query) {
-                return $query->orWhere('user_id', Auth::id());
-            })
-            ->sum('quantite') ?? 0;
+        $sessionId = session()->getId();
+        $userId    = Auth::check() ? Auth::id() : null;
+
+        $query = Cart::query();
+        if ($userId) {
+            $query->where(function ($q) use ($userId, $sessionId) {
+                $q->where('user_id', $userId)
+                  ->orWhere('session_id', $sessionId);
+            });
+        } else {
+            $query->where('session_id', $sessionId);
+        }
+
+        $this->cartCount = (int) ($query->sum('quantite') ?? 0);
+        $this->dispatch('cartCountUpdated', count: $this->cartCount);
+    }
+
+    public function clearFlash(): void
+    {
+        $this->flashSuccess = null;
+        $this->flashError   = null;
     }
 
     public function render()

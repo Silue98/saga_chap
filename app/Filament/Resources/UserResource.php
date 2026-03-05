@@ -3,79 +3,69 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
+use App\Filament\Resources\UserResource\Widgets\UsersCount;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Hash;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Filters\ScopeFilter;
-
 
 class UserResource extends Resource
 {
-    protected static ?string $model = User::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $model          = User::class;
+    protected static ?string $navigationIcon  = 'heroicon-o-users';
+    protected static ?string $navigationLabel = 'Utilisateurs';
+    protected static ?int    $navigationSort  = 4;
 
     public static function form(Form $form): Form
     {
-        return $form
-        ->schema([
+        return $form->schema([
             TextInput::make('name')
                 ->required()
                 ->label('Nom'),
-
             TextInput::make('email')
                 ->email()
                 ->required()
                 ->unique(ignoreRecord: true),
-
             TextInput::make('password')
                 ->password()
                 ->label('Mot de passe')
-                ->required(fn (string $context) => $context === 'create') // Obligatoire à la création
-                ->dehydrated(fn ($state) => filled($state)) // Ne pas enregistrer champ vide
-                ->dehydrateStateUsing(fn ($state) => Hash::make($state)), // Hash le mot de passe
+                ->required(fn (string $context) => $context === 'create')
+                ->dehydrated(fn ($state) => filled($state))
+                ->dehydrateStateUsing(fn ($state) => Hash::make($state)),
+            Forms\Components\Toggle::make('is_admin')
+                ->label('Administrateur')
+                ->default(false),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-         return $table
+        return $table
             ->columns([
-        
-
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nom')
                     ->searchable()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
                     ->sortable(),
-
+                Tables\Columns\IconColumn::make('is_admin')
+                    ->label('Admin')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date de création')
-                    ->dateTime()
+                    ->dateTime('d/m/Y H:i')
                     ->sortable(),
             ])
-            ->filters([
-                // Tu peux ajouter des filtres ici si besoin
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -86,17 +76,23 @@ class UserResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
+            'index'  => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'edit'   => Pages\EditUser::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getHeaderWidgets(): array
+    {
+        return [
+            UsersCount::class,
         ];
     }
 }
+
