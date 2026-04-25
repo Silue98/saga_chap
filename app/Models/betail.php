@@ -24,6 +24,17 @@ class Betail extends Model
         'video',
         'quantite',
         'disponibilite',
+        'localisation_lat',
+        'localisation_lng',
+        'localisation_updated_at',
+        'localisation_adresse',
+    ];
+
+    protected $casts = [
+        'disponibilite'           => 'boolean',
+        'localisation_lat'        => 'float',
+        'localisation_lng'        => 'float',
+        'localisation_updated_at' => 'datetime',
     ];
 
     public function categorie()
@@ -36,13 +47,11 @@ class Betail extends Model
         return $this->hasMany(Cart::class, 'id_betail', 'id_betail');
     }
 
-    // Tous les médias (images + vidéo)
     public function medias()
     {
         return $this->hasMany(BetailMedia::class, 'id_betail', 'id_betail')->orderBy('ordre');
     }
 
-    // Images uniquement
     public function images()
     {
         return $this->hasMany(BetailMedia::class, 'id_betail', 'id_betail')
@@ -50,30 +59,36 @@ class Betail extends Model
                     ->orderBy('ordre');
     }
 
-    // Vidéo uniquement (une seule)
     public function video_media()
     {
         return $this->hasOne(BetailMedia::class, 'id_betail', 'id_betail')
                     ->where('type', 'video');
     }
 
-    // Image principale pour les cartes
+    /**
+     * Relation utilisée par Filament ImageColumn::make('imagePrincipale.chemin').
+     * Trie par principale DESC puis ordre ASC :
+     * → si une image est marquée principale=true, elle sort en premier
+     * → sinon, la première image (ordre 0) est retournée comme fallback automatique
+     */
     public function imagePrincipale()
     {
         return $this->hasOne(BetailMedia::class, 'id_betail', 'id_betail')
                     ->where('type', 'image')
-                    ->where('principale', true)
+                    ->orderByDesc('principale')
                     ->orderBy('ordre');
     }
 
-    // Accessor : retourne l'URL de la photo principale (compatibilité avec l'ancien code)
     public function getPhotoUrlAttribute(): ?string
     {
         $principale = $this->imagePrincipale;
         if ($principale) return asset('storage/' . $principale->chemin);
-        $first = $this->images->first();
-        if ($first) return asset('storage/' . $first->chemin);
         if ($this->photo) return asset('storage/' . $this->photo);
         return null;
+    }
+
+    public function hasLocalisation(): bool
+    {
+        return !is_null($this->localisation_lat) && !is_null($this->localisation_lng);
     }
 }

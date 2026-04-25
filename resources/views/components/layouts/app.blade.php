@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'SagaChap')</title>
+    <title>@yield('title', 'SagaChap — Le bétail de qualité, à portée de clic')</title>
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="shortcut icon" href="{{ asset('images/logo.jpeg') }}" type="image/x-icon">
@@ -19,11 +19,17 @@
             border-radius: 999px;
             padding: 0 4px;
         }
+        .navbar-brand .brand-slogan {
+            font-size: 0.65rem;
+            color: #6c757d;
+            display: block;
+            line-height: 1;
+        }
     </style>
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
 
-{{-- Unique instance Livewire cart-counter (gère le badge globalement) --}}
+{{-- Unique instance Livewire cart-counter --}}
 <livewire:cart-counter />
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
@@ -33,8 +39,13 @@
         </button>
 
         <a class="navbar-brand" href="{{ route('home') }}">
-            <img src="{{ asset('images/logo.jpeg') }}" alt="Logo" style="width: 40px; height: 40px; object-fit: cover; border-radius:50%;">
-            <span class="ms-2 fw-bold text-success">SagaChap</span>
+            <div class="d-flex align-items-center gap-2">
+                <img src="{{ asset('images/logo.jpeg') }}" alt="Logo" style="width: 38px; height: 38px; object-fit: cover; border-radius:50%;">
+                <div>
+                    <span class="fw-bold text-success" style="font-size:1.1rem;">SÂGACHAP</span>
+                    <span class="brand-slogan">Le bétail de qualité, à portée de clic</span>
+                </div>
+            </div>
         </a>
 
         <div class="collapse navbar-collapse" id="navbarContent">
@@ -120,7 +131,7 @@
                     </li>
                 @endauth
 
-                {{-- Icône panier desktop avec badge JS --}}
+                {{-- Panier desktop --}}
                 <li class="nav-item d-none d-lg-flex align-items-center ms-1">
                     <a href="{{ route('cart.index') }}" class="nav-link cart-wrapper">
                         <i class="fas fa-shopping-cart fs-5"></i>
@@ -180,9 +191,7 @@
 @endif
 
 <main class="py-4 flex-grow-1">
-    <div class="container px-3">
-        @yield('content')
-    </div>
+    @yield('content')
 </main>
 
 <footer class="bg-white border-top py-4 mt-4">
@@ -190,8 +199,14 @@
         <div class="row align-items-center g-3">
 
             <div class="col-md-4 text-center text-md-start">
-                <p class="mb-1"><strong class="text-success">SagaChap</strong> — Vente de bétail en ligne</p>
-                <p class="mb-0 text-muted small">&copy; {{ date('Y') }} Tous droits réservés.</p>
+                <div class="d-flex align-items-center gap-2 mb-1 justify-content-center justify-content-md-start">
+                    <img src="{{ asset('images/logo.jpeg') }}" alt="SagaChap"
+                         style="width:32px;height:32px;object-fit:cover;border-radius:50%;">
+                    <strong class="text-success">SÂGACHAP</strong>
+                </div>
+                <p class="mb-1 small text-muted fst-italic">🐄 Le bétail de qualité, à portée de clic</p>
+                <p class="mb-0 text-muted" style="font-size:0.7rem;">"Même ce que tu penses pas trouver, nous on te livre ça."</p>
+                <p class="mb-0 text-muted small mt-1">&copy; {{ date('Y') }} Tous droits réservés.</p>
             </div>
 
             <div class="col-md-4 text-center">
@@ -223,7 +238,6 @@
 @livewireScripts
 
 <script>
-    // Badge initialisé côté serveur dès le chargement de la page
     (function() {
         const initialCount = parseInt("{{ \App\Models\Cart::where(function($q){ $s=session()->getId(); $u=auth()->check()?auth()->id():null; if($u){$q->where('user_id',$u)->orWhere('session_id',$s);}else{$q->where('session_id',$s);} })->sum('quantite') ?? 0 }}");
         document.addEventListener('DOMContentLoaded', function() {
@@ -234,7 +248,6 @@
         });
     })();
 
-    // Ajouter au panier via Livewire
     function addToCartLivewire(betailId, quantity = 1) {
         const el = document.querySelector('[wire\\:id]');
         if (el) {
@@ -244,7 +257,6 @@
                 return;
             }
         }
-        // Fallback POST classique
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ route("cart.add") }}';
@@ -257,7 +269,6 @@
         form.submit();
     }
 
-    // Mise à jour du badge via événement Livewire
     document.addEventListener('livewire:initialized', () => {
         Livewire.on('cartCountUpdated', ({ count }) => {
             document.querySelectorAll('#nav-cart-badge, #nav-cart-badge-mobile').forEach(b => {

@@ -36,12 +36,12 @@
                          src="<?php echo e(asset('storage/' . $images->first()->chemin)); ?>"
                          alt="<?php echo e($betail->race); ?>"
                          class="w-100"
-                         style="height:380px;object-fit:cover;">
+                         style="height:380px;object-fit:contain;">
                 <?php elseif($betail->photo): ?>
                     <img src="<?php echo e(asset('storage/' . $betail->photo)); ?>"
                          alt="<?php echo e($betail->race); ?>"
                          class="w-100"
-                         style="height:380px;object-fit:cover;">
+                         style="height:380px;object-fit:contain;">
                 <?php else: ?>
                     <div class="d-flex align-items-center justify-content-center bg-light"
                          style="height:380px;">
@@ -56,9 +56,9 @@
                     <?php $__currentLoopData = $images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $img): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <img src="<?php echo e(asset('storage/' . $img->chemin)); ?>"
                              alt="Photo <?php echo e($loop->iteration); ?>"
-                             onclick="document.getElementById('main-photo').src = this.src"
+                             onclick="document.getElementById('main-photo').src = this.src; this.closest('.d-flex').querySelectorAll('img').forEach(i=>i.style.border='2px solid #dee2e6'); this.style.border='2px solid #198754';"
                              class="rounded border"
-                             style="width:72px;height:72px;object-fit:cover;cursor:pointer;transition:opacity .2s;"
+                             style="width:72px;height:72px;object-fit:contain;cursor:pointer;transition:opacity .2s;<?php echo e($loop->first ? 'border:2px solid #198754!important;' : ''); ?>"
                              onmouseover="this.style.opacity='0.7'"
                              onmouseout="this.style.opacity='1'">
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -71,7 +71,7 @@
                     <p class="fw-semibold mb-2">
                         <i class="fas fa-video me-2 text-success"></i>Vidéo de présentation
                     </p>
-                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;">
+                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;" preload="metadata">
                         <source src="<?php echo e(asset('storage/' . $video->chemin)); ?>" type="video/mp4">
                         <source src="<?php echo e(asset('storage/' . $video->chemin)); ?>" type="video/webm">
                         Votre navigateur ne supporte pas la lecture vidéo.
@@ -82,8 +82,10 @@
                     <p class="fw-semibold mb-2">
                         <i class="fas fa-video me-2 text-success"></i>Vidéo de présentation
                     </p>
-                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;">
+                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;" preload="metadata">
                         <source src="<?php echo e(asset('storage/' . $betail->video)); ?>" type="video/mp4">
+                        <source src="<?php echo e(asset('storage/' . $betail->video)); ?>" type="video/webm">
+                        Votre navigateur ne supporte pas la lecture vidéo.
                     </video>
                 </div>
             <?php endif; ?>
@@ -175,7 +177,108 @@
                     <i class="fas fa-times-circle me-2"></i>Indisponible
                 </button>
             <?php endif; ?>
+
+            
+            <div class="mt-4 p-3 bg-light rounded">
+                <small class="text-muted">
+                    <i class="fas fa-truck text-success me-2"></i>Livraison à domicile disponible<br>
+                    <i class="fas fa-hand-holding-usd text-success me-2"></i>Paiement à la livraison<br>
+                    <i class="fas fa-phone text-success me-2"></i>Confirmation par appel
+                </small>
+            </div>
         </div>
+    </div>
+
+    
+    <div class="mt-5">
+        <h4 class="fw-bold mb-3">
+            <i class="fas fa-map-marker-alt me-2 text-success"></i>Localisation de la bête en direct
+        </h4>
+
+        <?php if($betail->localisation_lat && $betail->localisation_lng): ?>
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-success">
+                        <i class="fas fa-circle me-1" style="font-size:8px;color:#28a745;animation:pulse 1.5s infinite;"></i>
+                        En direct
+                    </span>
+                    <span>Position actuelle — Mise à jour automatique</span>
+                </div>
+                <div class="card-body p-0" style="height:350px;position:relative;">
+                    <div id="map-betail" style="height:100%;width:100%;border-radius:0 0 8px 8px;"></div>
+                </div>
+                <div class="card-footer small text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Dernière position enregistrée :
+                    <?php if($betail->localisation_updated_at): ?>
+                        <?php echo e(\Carbon\Carbon::parse($betail->localisation_updated_at)->diffForHumans()); ?>
+
+                    <?php else: ?>
+                        Disponible
+                    <?php endif; ?>
+                    — Coordonnées : <?php echo e($betail->localisation_lat); ?>, <?php echo e($betail->localisation_lng); ?>
+
+                </div>
+            </div>
+
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const lat = <?php echo e($betail->localisation_lat); ?>;
+                    const lng = <?php echo e($betail->localisation_lng); ?>;
+
+                    const map = L.map('map-betail').setView([lat, lng], 14);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    const icon = L.divIcon({
+                        html: '<div style="background:#198754;color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid white;">🐄</div>',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20],
+                        className: ''
+                    });
+
+                    const marker = L.marker([lat, lng], { icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <strong><?php echo e($betail->race); ?></strong><br>
+                            <?php echo e($betail->origine); ?><br>
+                            <span class="text-muted"><?php echo e(number_format($betail->prix, 0, ',', ' ')); ?> FCFA</span>
+                        `)
+                        .openPopup();
+
+                    // Cercle de zone approximative
+                    L.circle([lat, lng], { radius: 500, color: '#198754', fillOpacity: 0.08, weight: 1 }).addTo(map);
+
+                    // Auto-refresh toutes les 30s
+                    setInterval(function () {
+                        fetch('/api/betails/<?php echo e($betail->id_betail); ?>/location')
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.lat && data.lng) {
+                                    marker.setLatLng([data.lat, data.lng]);
+                                    map.panTo([data.lat, data.lng]);
+                                }
+                            })
+                            .catch(() => {});
+                    }, 30000);
+                });
+            </script>
+            <style>
+                @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+            </style>
+        <?php else: ?>
+            <div class="card border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-map-marked-alt fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-0">La localisation en direct n'est pas encore disponible pour ce bétail.</p>
+                    <small class="text-muted">Contactez-nous pour connaître l'emplacement exact.</small>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 
     
@@ -194,12 +297,12 @@
                         <?php if($img): ?>
                             <img src="<?php echo e(asset('storage/' . $img->chemin)); ?>"
                                  class="card-img-top"
-                                 style="height:140px;object-fit:cover;"
+                                 style="height:140px;object-fit:contain;"
                                  alt="<?php echo e($s->race); ?>">
                         <?php elseif($s->photo): ?>
                             <img src="<?php echo e(asset('storage/' . $s->photo)); ?>"
                                  class="card-img-top"
-                                 style="height:140px;object-fit:cover;"
+                                 style="height:140px;object-fit:contain;"
                                  alt="<?php echo e($s->race); ?>">
                         <?php else: ?>
                             <div class="bg-light d-flex align-items-center justify-content-center"

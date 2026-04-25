@@ -19,10 +19,24 @@ Route::patch('/cart/{id}', [CartController::class, 'update'])->name('cart.update
 Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
 
-// Checkout et commande
+// Checkout et commande (sans inscription requise)
 Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
 Route::post('/checkout', [CartController::class, 'placeOrder'])->name('order.place');
 Route::get('/commande/confirmation/{id}', [CartController::class, 'confirmation'])->name('order.confirmation');
+
+// API localisation bétail (temps réel)
+Route::get('/api/betails/{id}/location', function ($id) {
+    $betail = \App\Models\Betail::findOrFail($id);
+    if (!$betail->localisation_lat || !$betail->localisation_lng) {
+        return response()->json(['error' => 'no location'], 404);
+    }
+    return response()->json([
+        'lat'       => $betail->localisation_lat,
+        'lng'       => $betail->localisation_lng,
+        'adresse'   => $betail->localisation_adresse,
+        'updated_at'=> $betail->localisation_updated_at,
+    ]);
+})->name('api.betail.location');
 
 // Historique commandes (connecté)
 Route::middleware(['auth'])->group(function () {
@@ -43,4 +57,3 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
-

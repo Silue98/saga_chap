@@ -39,7 +39,7 @@ class CartController extends Controller
         return view('client.cart.index', compact('cartItems', 'total'));
     }
 
-    // Ajouter au panier (via formulaire classique)
+    // Ajouter au panier (accessible sans connexion)
     public function add(Request $request)
     {
         $request->validate([
@@ -56,6 +56,9 @@ class CartController extends Controller
         if (!$betail->disponibilite) {
             return back()->with('error', 'Ce bétail n\'est plus disponible.');
         }
+        if ($betail->quantite < $quantity) {
+            return back()->with('error', 'Stock insuffisant. Seulement ' . $betail->quantite . ' disponible(s).');
+        }
 
         $query = Cart::where('id_betail', $betailId);
         if ($userId) {
@@ -66,7 +69,11 @@ class CartController extends Controller
         $cartItem = $query->first();
 
         if ($cartItem) {
-            $cartItem->increment('quantite', $quantity);
+            $newQty = $cartItem->quantite + $quantity;
+            if ($newQty > $betail->quantite) {
+                $newQty = $betail->quantite;
+            }
+            $cartItem->update(['quantite' => $newQty]);
         } else {
             Cart::create([
                 'user_id'    => $userId,
@@ -76,7 +83,7 @@ class CartController extends Controller
             ]);
         }
 
-        return back()->with('cart_success', 'Bétail ajouté au panier !');
+        return back()->with('cart_success', '✅ ' . $betail->race . ' ajouté au panier !');
     }
 
     // Modifier la quantité
@@ -109,7 +116,7 @@ class CartController extends Controller
         return back()->with('cart_success', 'Panier vidé.');
     }
 
-    // Afficher le formulaire de checkout
+    // Afficher le formulaire de checkout (sans connexion requise)
     public function checkout()
     {
         $cartItems = $this->cartQuery()->get();
@@ -121,7 +128,7 @@ class CartController extends Controller
         return view('client.betail.checkout', compact('cartItems', 'total'));
     }
 
-    // Valider la commande
+    // Valider la commande (sans connexion requise)
     public function placeOrder(Request $request)
     {
         $request->validate([
@@ -130,11 +137,20 @@ class CartController extends Controller
             'telephone' => 'required|string|max:20',
             'adresse'   => 'required|string|max:255',
             'ville'     => 'required|string|max:100',
+            'email'     => 'nullable|email|max:150',
         ]);
 
         $cartItems = $this->cartQuery()->get();
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Votre panier est vide.');
+        }
+
+        // Vérifier les stocks avant de valider
+        foreach ($cartItems as $item) {
+            if (!$item->betail) continue;
+            if ($item->betail->quantite < $item->quantite) {
+                return back()->with('error', 'Stock insuffisant pour : ' . $item->betail->race . '. Seulement ' . $item->betail->quantite . ' disponible(s).');
+            }
         }
 
         $total = $cartItems->sum(fn ($item) => $item->betail ? $item->betail->prix * $item->quantite : 0);
@@ -152,7 +168,7 @@ class CartController extends Controller
             'statut'        => 'en_attente',
         ]);
 
-        // Créer les lignes de commande
+        // Créer les lignes de commande + décrémenter le stock
         foreach ($cartItems as $item) {
             if (!$item->betail) continue;
             CommandeItem::create([
@@ -161,12 +177,17 @@ class CartController extends Controller
                 'quantite'      => $item->quantite,
                 'prix_unitaire' => $item->betail->prix,
             ]);
+            // Décrémenter le stock
+            $item->betail->decrement('quantite', $item->quantite);
+            if ($item->betail->quantite <= 0) {
+                $item->betail->update(['disponibilite' => false]);
+            }
         }
 
         // Vider le panier
         $this->cartQuery()->delete();
 
-        // Envoyer l'email de confirmation si une adresse email est disponible
+        // Email de confirmation
         $email = Auth::check()
             ? Auth::user()->email
             : $request->input('email');
@@ -175,30 +196,31 @@ class CartController extends Controller
             try {
                 Mail::to($email)->send(new CommandeConfirmation($commande->load('items.betail')));
             } catch (\Exception $e) {
-                // Ne pas bloquer la commande si l'email échoue
                 \Log::warning('Email confirmation non envoyé : ' . $e->getMessage());
             }
         }
 
-        // Notifier tous les admins via Filament
+        // Notifier les admins via Filament
         $admins = User::where('is_admin', true)->get();
-        Notification::make()
-            ->title('🛒 Nouvelle commande #' . $commande->id)
-            ->body($commande->prenom . ' ' . $commande->nom . ' — ' . number_format($commande->montant_total, 0, ',', ' ') . ' FCFA')
-            ->warning()
-            ->actions([
-                Action::make('voir')
-                    ->label('Traiter la commande')
-                    ->url(route('filament.admin.resources.commandes.edit', $commande->id))
-                    ->markAsRead(),
-            ])
-            ->sendToDatabase($admins);
+        if ($admins->isNotEmpty()) {
+            Notification::make()
+                ->title('🛒 Nouvelle commande #' . $commande->id)
+                ->body($commande->prenom . ' ' . $commande->nom . ' — ' . number_format($commande->montant_total, 0, ',', ' ') . ' FCFA')
+                ->warning()
+                ->actions([
+                    Action::make('voir')
+                        ->label('Traiter la commande')
+                        ->url(route('filament.admin.resources.commandes.edit', $commande->id))
+                        ->markAsRead(),
+                ])
+                ->sendToDatabase($admins);
+        }
 
         return redirect()->route('order.confirmation', $commande->id)
-                         ->with('order_success', 'Commande passée avec succès !');
+                         ->with('order_success', '✅ Commande passée avec succès !');
     }
 
-    // Page de confirmation — accessible uniquement au propriétaire
+    // Page de confirmation — accessible au propriétaire (session ou user)
     public function confirmation($id)
     {
         $commande = Commande::with('items.betail')->findOrFail($id);
@@ -216,7 +238,6 @@ class CartController extends Controller
         return view('client.cart.confirmation', compact('commande'));
     }
 
-    // Sécurité : vérifier que l'item appartient à la session/user
     private function authorizeCartItem(Cart $item)
     {
         $sessionId = session()->getId();

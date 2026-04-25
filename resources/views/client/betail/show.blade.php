@@ -37,12 +37,12 @@
                          src="{{ asset('storage/' . $images->first()->chemin) }}"
                          alt="{{ $betail->race }}"
                          class="w-100"
-                         style="height:380px;object-fit:cover;">
+                         style="height:380px;object-fit:contain;">
                 @elseif($betail->photo)
                     <img src="{{ asset('storage/' . $betail->photo) }}"
                          alt="{{ $betail->race }}"
                          class="w-100"
-                         style="height:380px;object-fit:cover;">
+                         style="height:380px;object-fit:contain;">
                 @else
                     <div class="d-flex align-items-center justify-content-center bg-light"
                          style="height:380px;">
@@ -57,9 +57,9 @@
                     @foreach($images as $img)
                         <img src="{{ asset('storage/' . $img->chemin) }}"
                              alt="Photo {{ $loop->iteration }}"
-                             onclick="document.getElementById('main-photo').src = this.src"
+                             onclick="document.getElementById('main-photo').src = this.src; this.closest('.d-flex').querySelectorAll('img').forEach(i=>i.style.border='2px solid #dee2e6'); this.style.border='2px solid #198754';"
                              class="rounded border"
-                             style="width:72px;height:72px;object-fit:cover;cursor:pointer;transition:opacity .2s;"
+                             style="width:72px;height:72px;object-fit:contain;cursor:pointer;transition:opacity .2s;{{ $loop->first ? 'border:2px solid #198754!important;' : '' }}"
                              onmouseover="this.style.opacity='0.7'"
                              onmouseout="this.style.opacity='1'">
                     @endforeach
@@ -72,7 +72,7 @@
                     <p class="fw-semibold mb-2">
                         <i class="fas fa-video me-2 text-success"></i>Vidéo de présentation
                     </p>
-                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;">
+                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;" preload="metadata">
                         <source src="{{ asset('storage/' . $video->chemin) }}" type="video/mp4">
                         <source src="{{ asset('storage/' . $video->chemin) }}" type="video/webm">
                         Votre navigateur ne supporte pas la lecture vidéo.
@@ -83,8 +83,10 @@
                     <p class="fw-semibold mb-2">
                         <i class="fas fa-video me-2 text-success"></i>Vidéo de présentation
                     </p>
-                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;">
+                    <video controls class="w-100 rounded border" style="max-height:280px;background:#000;" preload="metadata">
                         <source src="{{ asset('storage/' . $betail->video) }}" type="video/mp4">
+                        <source src="{{ asset('storage/' . $betail->video) }}" type="video/webm">
+                        Votre navigateur ne supporte pas la lecture vidéo.
                     </video>
                 </div>
             @endif
@@ -173,7 +175,106 @@
                     <i class="fas fa-times-circle me-2"></i>Indisponible
                 </button>
             @endif
+
+            {{-- Avantages --}}
+            <div class="mt-4 p-3 bg-light rounded">
+                <small class="text-muted">
+                    <i class="fas fa-truck text-success me-2"></i>Livraison à domicile disponible<br>
+                    <i class="fas fa-hand-holding-usd text-success me-2"></i>Paiement à la livraison<br>
+                    <i class="fas fa-phone text-success me-2"></i>Confirmation par appel
+                </small>
+            </div>
         </div>
+    </div>
+
+    {{-- ===== LOCALISATION EN TEMPS RÉEL ===== --}}
+    <div class="mt-5">
+        <h4 class="fw-bold mb-3">
+            <i class="fas fa-map-marker-alt me-2 text-success"></i>Localisation de la bête en direct
+        </h4>
+
+        @if($betail->localisation_lat && $betail->localisation_lng)
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-success">
+                        <i class="fas fa-circle me-1" style="font-size:8px;color:#28a745;animation:pulse 1.5s infinite;"></i>
+                        En direct
+                    </span>
+                    <span>Position actuelle — Mise à jour automatique</span>
+                </div>
+                <div class="card-body p-0" style="height:350px;position:relative;">
+                    <div id="map-betail" style="height:100%;width:100%;border-radius:0 0 8px 8px;"></div>
+                </div>
+                <div class="card-footer small text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Dernière position enregistrée :
+                    @if($betail->localisation_updated_at)
+                        {{ \Carbon\Carbon::parse($betail->localisation_updated_at)->diffForHumans() }}
+                    @else
+                        Disponible
+                    @endif
+                    — Coordonnées : {{ $betail->localisation_lat }}, {{ $betail->localisation_lng }}
+                </div>
+            </div>
+
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const lat = {{ $betail->localisation_lat }};
+                    const lng = {{ $betail->localisation_lng }};
+
+                    const map = L.map('map-betail').setView([lat, lng], 14);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    const icon = L.divIcon({
+                        html: '<div style="background:#198754;color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid white;">🐄</div>',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20],
+                        className: ''
+                    });
+
+                    const marker = L.marker([lat, lng], { icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <strong>{{ $betail->race }}</strong><br>
+                            {{ $betail->origine }}<br>
+                            <span class="text-muted">{{ number_format($betail->prix, 0, ',', ' ') }} FCFA</span>
+                        `)
+                        .openPopup();
+
+                    // Cercle de zone approximative
+                    L.circle([lat, lng], { radius: 500, color: '#198754', fillOpacity: 0.08, weight: 1 }).addTo(map);
+
+                    // Auto-refresh toutes les 30s
+                    setInterval(function () {
+                        fetch('/api/betails/{{ $betail->id_betail }}/location')
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.lat && data.lng) {
+                                    marker.setLatLng([data.lat, data.lng]);
+                                    map.panTo([data.lat, data.lng]);
+                                }
+                            })
+                            .catch(() => {});
+                    }, 30000);
+                });
+            </script>
+            <style>
+                @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+            </style>
+        @else
+            <div class="card border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-map-marked-alt fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-0">La localisation en direct n'est pas encore disponible pour ce bétail.</p>
+                    <small class="text-muted">Contactez-nous pour connaître l'emplacement exact.</small>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Suggestions --}}
@@ -192,12 +293,12 @@
                         @if($img)
                             <img src="{{ asset('storage/' . $img->chemin) }}"
                                  class="card-img-top"
-                                 style="height:140px;object-fit:cover;"
+                                 style="height:140px;object-fit:contain;"
                                  alt="{{ $s->race }}">
                         @elseif($s->photo)
                             <img src="{{ asset('storage/' . $s->photo) }}"
                                  class="card-img-top"
-                                 style="height:140px;object-fit:cover;"
+                                 style="height:140px;object-fit:contain;"
                                  alt="{{ $s->race }}">
                         @else
                             <div class="bg-light d-flex align-items-center justify-content-center"

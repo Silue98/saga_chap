@@ -48,7 +48,11 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center gap-3">
-                                            @if($item->betail->photo)
+                                            @php $ordImg = $item->betail->images()->first(); @endphp
+                                    @if($ordImg)
+                                        <img src="{{ asset('storage/' . $ordImg->chemin) }}"
+                                             style="width:50px;height:50px;object-fit:cover;border-radius:6px;">
+                                    @elseif($item->betail->photo)
                                                 <img src="{{ asset('storage/' . $item->betail->photo) }}"
                                                      style="width:50px;height:50px;object-fit:cover;border-radius:6px;">
                                             @else

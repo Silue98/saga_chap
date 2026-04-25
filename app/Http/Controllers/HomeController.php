@@ -10,9 +10,9 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        $categories = Categorie::all();
+        $categories = Categorie::orderBy('nom_categorie')->get();
 
-        $query = Betail::with('categorie')->where('disponibilite', true);
+        $query = Betail::with(['categorie', 'medias'])->where('disponibilite', true);
 
         if ($request->filled('categorie')) {
             $query->where('id_categorie_betail', $request->categorie);
@@ -26,17 +26,20 @@ class HomeController extends Controller
             });
         }
 
-        $betails = $query->get();
+        // Tri : d'abord ceux avec photo, ensuite par id desc
+        $betails = $query->orderByDesc('id_betail')->get();
 
         return view('welcome', compact('categories', 'betails'));
     }
 
     public function show(string $id)
     {
-        $betail    = Betail::with('categorie')->findOrFail($id);
+        $betail    = Betail::with(['categorie', 'medias'])->findOrFail($id);
         $categorie = $betail->categorie;
+
         // Suggestions : autres bétails de la même catégorie
-        $suggestions = Betail::where('id_categorie_betail', $betail->id_categorie_betail)
+        $suggestions = Betail::with('medias')
+            ->where('id_categorie_betail', $betail->id_categorie_betail)
             ->where('id_betail', '!=', $betail->id_betail)
             ->where('disponibilite', true)
             ->take(4)
@@ -45,4 +48,3 @@ class HomeController extends Controller
         return view('client.betail.show', compact('betail', 'categorie', 'suggestions'));
     }
 }
-

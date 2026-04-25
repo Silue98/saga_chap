@@ -17,10 +17,9 @@ class CreateBetail extends CreateRecord
 
     protected function saveMedias(int $betailId): void
     {
-        $data            = $this->form->getRawState();
-        $imagePrincipale = $data['image_principale'] ?? null;
+        $data = $this->form->getRawState();
 
-        // Images
+        // ── Images ──
         if (!empty($data['images_upload'])) {
             $images = is_array($data['images_upload'])
                 ? array_values($data['images_upload'])
@@ -28,27 +27,21 @@ class CreateBetail extends CreateRecord
 
             $ordre = 0;
             foreach ($images as $chemin) {
-                // Ignorer les fichiers temporaires Livewire
                 if (str_contains($chemin, 'livewire-tmp') || str_contains($chemin, 'tmp/')) {
                     continue;
                 }
-
-                $estPrincipale = $imagePrincipale
-                    ? ($chemin === $imagePrincipale)
-                    : ($ordre === 0);
-
                 BetailMedia::create([
                     'id_betail'  => $betailId,
                     'type'       => 'image',
                     'chemin'     => $chemin,
-                    'principale' => $estPrincipale,
+                    'principale' => $ordre === 0, // première image = principale par défaut
                     'ordre'      => $ordre,
                 ]);
                 $ordre++;
             }
         }
 
-        // Vidéo
+        // ── Vidéo ──
         if (!empty($data['video_upload'])) {
             $chemins = is_array($data['video_upload'])
                 ? array_values($data['video_upload'])

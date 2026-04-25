@@ -14,18 +14,15 @@ class EditBetail extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\DeleteAction::make(),
-        ];
+        return [Actions\DeleteAction::make()];
     }
 
     protected function afterSave(): void
     {
-        $data            = $this->form->getRawState();
-        $betailId        = $this->record->id_betail;
-        $imagePrincipale = $data['image_principale'] ?? null;
+        $data     = $this->form->getRawState();
+        $betailId = $this->record->id_betail;
 
-        // Filtrer les fichiers temporaires
+        // ── Nouvelles images uploadées ──
         $nouvellesImages = [];
         if (!empty($data['images_upload'])) {
             $images = is_array($data['images_upload'])
@@ -39,39 +36,72 @@ class EditBetail extends EditRecord
             }
         }
 
-        // S'il y a de nouvelles images définitives → remplacer les anciennes
         if (!empty($nouvellesImages)) {
-            foreach ($this->record->images as $media) {
-                Storage::disk('public')->delete($media->chemin);
-                $media->delete();
-            }
+            // Si toggle "remplacer toutes" est activé → supprimer les anciennes
+            if (!empty($data['supprimer_toutes_images'])) {
+                foreach ($this->record->images as $media) {
+                    Storage::disk('public')->delete($media->chemin);
+                    $media->delete();
+                }
+                // Ajouter les nouvelles, première = principale
+                $ordre = 0;
+                foreach ($nouvellesImages as $chemin) {
+                    BetailMedia::create([
+                        'id_betail'  => $betailId,
+                        'type'       => 'image',
+                        'chemin'     => $chemin,
+                        'principale' => $ordre === 0,
+                        'ordre'      => $ordre,
+                    ]);
+                    $ordre++;
+                }
+            } else {
+                // Ajouter les nouvelles images sans supprimer les anciennes
+                $maxOrdre = BetailMedia::where('id_betail', $betailId)
+                    ->where('type', 'image')
+                    ->max('ordre') ?? -1;
 
-            $ordre = 0;
-            foreach ($nouvellesImages as $chemin) {
-                $estPrincipale = $imagePrincipale
-                    ? ($chemin === $imagePrincipale)
-                    : ($ordre === 0);
+                $dejaUnePrincipale = BetailMedia::where('id_betail', $betailId)
+                    ->where('type', 'image')
+                    ->where('principale', true)
+                    ->exists();
 
-                BetailMedia::create([
-                    'id_betail'  => $betailId,
-                    'type'       => 'image',
-                    'chemin'     => $chemin,
-                    'principale' => $estPrincipale,
-                    'ordre'      => $ordre,
-                ]);
-                $ordre++;
+                $ordre = $maxOrdre + 1;
+                foreach ($nouvellesImages as $chemin) {
+                    BetailMedia::create([
+                        'id_betail'  => $betailId,
+                        'type'       => 'image',
+                        'chemin'     => $chemin,
+                        'principale' => !$dejaUnePrincipale && $ordre === ($maxOrdre + 1),
+                        'ordre'      => $ordre,
+                    ]);
+                    $dejaUnePrincipale = true;
+                    $ordre++;
+                }
             }
-        } elseif ($imagePrincipale) {
-            // Pas de nouvel upload — juste changer l'image principale
-            BetailMedia::where('id_betail', $betailId)
-                ->where('type', 'image')
-                ->update(['principale' => false]);
-            BetailMedia::where('id_betail', $betailId)
-                ->where('chemin', $imagePrincipale)
-                ->update(['principale' => true]);
         }
 
-        // Vidéo
+        // ── Changer l'image principale parmi les existantes ──
+        if (!empty($data['image_principale_chemin'])) {
+            $nouvellePrincipale = $data['image_principale_chemin'];
+            // Vérifier que ce chemin appartient bien à ce bétail
+            $exists = BetailMedia::where('id_betail', $betailId)
+                ->where('type', 'image')
+                ->where('chemin', $nouvellePrincipale)
+                ->exists();
+
+            if ($exists) {
+                BetailMedia::where('id_betail', $betailId)
+                    ->where('type', 'image')
+                    ->update(['principale' => false]);
+
+                BetailMedia::where('id_betail', $betailId)
+                    ->where('chemin', $nouvellePrincipale)
+                    ->update(['principale' => true]);
+            }
+        }
+
+        // ── Vidéo ──
         if (!empty($data['video_upload'])) {
             $chemins = is_array($data['video_upload'])
                 ? array_values($data['video_upload'])
@@ -81,13 +111,11 @@ class EditBetail extends EditRecord
                 if (str_contains($chemin, 'livewire-tmp') || str_contains($chemin, 'tmp/')) {
                     continue;
                 }
-
                 $oldVideo = $this->record->video_media;
                 if ($oldVideo) {
                     Storage::disk('public')->delete($oldVideo->chemin);
                     $oldVideo->delete();
                 }
-
                 BetailMedia::create([
                     'id_betail'  => $betailId,
                     'type'       => 'video',
