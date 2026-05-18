@@ -132,7 +132,7 @@
             {{ $slot }}
         </div>
 
-        <p class="mt-4 text-center" style="font-size:0.75rem;color:#9ca3af;">
+        <p class="mt-4 text-center" style="font-size:0.30rem;color:#9ca3af;">
             Développé par <strong>SS — Silué Samuel</strong><br>
             <a href="tel:+2250788718510" style="color:#16a34a;text-decoration:none;">+225 07 88 71 85 10</a>
         </p>
