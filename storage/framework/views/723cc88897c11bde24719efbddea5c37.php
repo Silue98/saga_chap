@@ -238,19 +238,23 @@ if (isset($__slots)) unset($__slots);
                 <?php endif; ?>
             </div>
 
-            <div class="col-md-4 text-center text-md-end">
-                <p class="mb-1 small fw-semibold">
-                    <i class="fas fa-code text-success me-1"></i>Développé par <strong>SS — Silué Samuel</strong>
-                </p>
-                <p class="mb-0 small">
-                    <a href="tel:+2250788718510" class="text-success text-decoration-none me-3">
-                        <i class="fas fa-phone me-1"></i>+225 07 88 71 85 10
-                    </a>
-                    <a href="tel:+2250586671113" class="text-success text-decoration-none">
-                        <i class="fas fa-phone me-1"></i>+225 05 86 67 11 13
-                    </a>
-                </p>
-            </div>
+           <div class="col-md-4 text-center text-md-end" style="font-size:0.425rem;">
+    <p class="mb-1 fw-semibold">
+        <i class="fas fa-code text-success me-1"></i>
+        Développé par SS — Silué Samuel
+
+    <p class="mb-0">
+        <a href="tel:+2250788718510" class="text-success text-decoration-none me-3">
+            <i class="fas fa-phone me-1"></i>
+            +225 07 88 71 85 10
+        </a>
+
+        <a href="tel:+2250586671113" class="text-success text-decoration-none">
+            <i class="fas fa-phone me-1"></i>
+            +225 05 86 67 11 13
+        </a>
+    </p>
+</div>
 
         </div>
     </div>
