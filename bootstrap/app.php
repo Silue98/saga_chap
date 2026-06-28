@@ -14,5 +14,5 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->redirectUsersTo('/dashboard');
 })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        ///
     })->create();
